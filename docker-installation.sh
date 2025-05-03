@@ -14,7 +14,7 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-echo -e "${GREEN}Starting Docker and Docker Compose installation on Ubuntu...${NC}"
+echo -e "${GREEN}Starting Docker and Docker Compose installation/upgrade on Ubuntu...${NC}"
 
 # Step 1: Update package index
 echo "Updating package index..."
@@ -36,12 +36,12 @@ fi
 echo "Adding Docker repository..."
 echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
 
-# Step 5: Install Docker Engine
-echo "Installing Docker Engine..."
+# Step 5: Install or upgrade Docker Engine
+echo "Installing or upgrading Docker Engine..."
 apt update
 apt install -y docker-ce docker-ce-cli containerd.io
 if [ $? -ne 0 ]; then
-    echo -e "${RED}Error: Failed to install Docker.${NC}"
+    echo -e "${RED}Error: Failed to install/upgrade Docker.${NC}"
     exit 1
 fi
 
@@ -54,28 +54,28 @@ systemctl enable docker
 echo "Verifying Docker installation..."
 DOCKER_VERSION=$(docker --version)
 if [ $? -eq 0 ]; then
-    echo -e "${GREEN}Docker installed successfully: $DOCKER_VERSION${NC}"
+    echo -e "${GREEN}Docker installed/upgraded successfully: $DOCKER_VERSION${NC}"
 else
-    echo -e "${RED}Error: Docker installation failed.${NC}"
+    echo -e "${RED}Error: Docker installation/upgrade failed.${NC}"
     exit 1
 fi
 
-# Step 8: Add current user (ubuntu) to docker group
-echo "Adding user 'ubuntu' to docker group..."
-usermod -aG docker ubuntu
+# Step 8: Add current user to docker group
+CURRENT_USER=$(whoami)
+echo "Adding user '$CURRENT_USER' to docker group..."
+usermod -aG docker "$CURRENT_USER"
 if [ $? -eq 0 ]; then
-    echo -e "${GREEN}User 'ubuntu' added to docker group. Log out and back in to apply.${NC}"
+    echo -e "${GREEN}User '$CURRENT_USER' added to docker group. Log out and back in to apply, or run 'newgrp docker'.${NC}"
 else
-    echo -e "${RED}Error: Failed to add user to docker group.${NC}"
-    exit 1
+    echo -e "${RED}Error: Failed to add user to docker group. You might need to do this manually.${NC}"
 fi
 
-# Step 9: Install Docker Compose plugin
-echo "Installing Docker Compose plugin..."
+# Step 9: Install or upgrade Docker Compose plugin
+echo "Installing or upgrading Docker Compose plugin..."
 apt update
 apt install -y docker-compose-plugin
 if [ $? -ne 0 ]; then
-    echo -e "${RED}Error: Failed to install Docker Compose plugin.${NC}"
+    echo -e "${RED}Error: Failed to install/upgrade Docker Compose plugin.${NC}"
     exit 1
 fi
 
@@ -83,12 +83,12 @@ fi
 echo "Verifying Docker Compose installation..."
 DOCKER_COMPOSE_VERSION=$(docker compose version)
 if [ $? -eq 0 ]; then
-    echo -e "${GREEN}Docker Compose installed successfully: $DOCKER_COMPOSE_VERSION${NC}"
+    echo -e "${GREEN}Docker Compose installed/upgraded successfully: $DOCKER_COMPOSE_VERSION${NC}"
 else
-    echo -e "${RED}Error: Docker Compose installation failed.${NC}"
+    echo -e "${RED}Error: Docker Compose installation/upgrade failed.${NC}"
     exit 1
 fi
 
-echo -e "${GREEN}Docker and Docker Compose installation completed successfully!${NC}"
+echo -e "${GREEN}Docker and Docker Compose installation/upgrade completed successfully!${NC}"
 echo "To use Docker without sudo, log out and back in, or run 'newgrp docker'."
 echo "You can now navigate to your project directory and run 'docker compose up --build'."
