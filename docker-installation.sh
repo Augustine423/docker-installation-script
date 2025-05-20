@@ -79,6 +79,9 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+sudo usermod -aG docker $USER
+newgrp docker
+
 # Step 10: Verify Docker Compose with version check
 echo "Verifying Docker Compose installation..."
 DOCKER_COMPOSE_VERSION=$(docker compose version)
