@@ -9,14 +9,8 @@ GREEN='\033[0;32m'
 NC='\033[0m' # No Color
 
 # Check if running as root or with sudo
-if [ "$EUID" -ne "0 ]; then
+if [ "$EUID" -ne 0 ]; then
     echo -e "${RED}Error: This script must be run as root or with sudo.${NC}"
-    exit 1
-fi
-
-# Check if running on Ubuntu
-if ! [ -f /etc/lsb-release ] || ! grep -qi ubuntu /etc/lsb-release; then
-    echo -e "${RED}Error: This script is designed for Ubuntu systems only.${NC}"
     exit 1
 fi
 
@@ -66,17 +60,14 @@ else
     exit 1
 fi
 
-# Step 8: Add non-root user to docker group
-if [ -n "$SUDO_USER" ]; then
-    echo "Adding user '$SUDO_USER' to docker group..."
-    usermod -aG docker "$SUDO_USER"
-    if [ $? -eq 0 ]; then
-        echo -e "${GREEN}User '$SUDO_USER' added to docker group. Log out and back in to apply, or run 'newgrp docker' as '$SUDO_USER'.${NC}"
-    else
-        echo -e "${RED}Error: Failed to add user to docker group. You might need to do this manually.${NC}"
-    fi
+# Step 8: Add current user to docker group
+CURRENT_USER=$(whoami)
+echo "Adding user '$CURRENT_USER' to docker group..."
+usermod -aG docker "$CURRENT_USER"
+if [ $? -eq 0 ]; then
+    echo -e "${GREEN}User '$CURRENT_USER' added to docker group. Log out and back in to apply, or run 'newgrp docker'.${NC}"
 else
-    echo -e "${RED}Warning: No SUDO_USER detected. Skipping adding user to docker group. Add a user manually with 'sudo usermod -aG docker <username>'.${NC}"
+    echo -e "${RED}Error: Failed to add user to docker group. You might need to do this manually.${NC}"
 fi
 
 # Step 9: Install or upgrade Docker Compose plugin
@@ -87,6 +78,9 @@ if [ $? -ne 0 ]; then
     echo -e "${RED}Error: Failed to install/upgrade Docker Compose plugin.${NC}"
     exit 1
 fi
+
+sudo usermod -aG docker $USER
+newgrp docker
 
 # Step 10: Verify Docker Compose with version check
 echo "Verifying Docker Compose installation..."
@@ -99,5 +93,5 @@ else
 fi
 
 echo -e "${GREEN}Docker and Docker Compose installation/upgrade completed successfully!${NC}"
-echo "To use Docker without sudo, run 'newgrp docker' as '$SUDO_USER' or log out and back in."
+echo "To use Docker without sudo, log out and back in, or run 'newgrp docker'."
 echo "You can now navigate to your project directory and run 'docker compose up --build'."
